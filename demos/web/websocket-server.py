@@ -50,6 +50,8 @@ import matplotlib.cm as cm
 
 import openface
 
+import time
+
 modelDir = os.path.join(fileDir, '..', '..', 'models')
 dlibModelDir = os.path.join(modelDir, 'dlib')
 openfaceModelDir = os.path.join(modelDir, 'openface')
@@ -111,6 +113,9 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             msg['type'], len(raw)))
         if msg['type'] == "ALL_STATE":
             self.loadState(msg['images'], msg['training'], msg['people'])
+        elif msg['type'] == "":
+            d = getRep(msg['img1']) - getRep(msg['img2'])
+            self.sendMessage('{"distance": {:0.3f}}'.format(np.dot(d, d)))
         elif msg['type'] == "NULL":
             self.sendMessage('{"type": "NULL"}')
         elif msg['type'] == "FRAME":
@@ -352,6 +357,50 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             }
             plt.close()
             self.sendMessage(json.dumps(msg))
+
+def getRep(dataURL):
+    if args.verbose:
+        print("Processing.")
+    head = "data:image/jpeg;base64,"
+    assert(dataURL.startswith(head))
+    imgdata = base64.b64decode(dataURL[len(head):])
+    imgF = StringIO.StringIO()
+    imgF.write(imgdata)
+    imgF.seek(0)
+    img = Image.open(imgF)
+
+    buf = np.fliplr(np.asarray(img))
+    rgbImg = np.zeros((300, 400, 3), dtype=np.uint8)
+    rgbImg[:, :, 0] = buf[:, :, 2]
+    rgbImg[:, :, 1] = buf[:, :, 1]
+    rgbImg[:, :, 2] = buf[:, :, 0]
+
+    if args.verbose:
+        print("  + Original size: {}".format(rgbImg.shape))
+
+    start = time.time()
+    bb = align.getLargestFaceBoundingBox(rgbImg)
+    if bb is None:
+        raise Exception("Unable to find a face")
+    if args.verbose:
+        print("  + Face detection took {} seconds.".format(time.time() - start))
+
+    start = time.time()
+    alignedFace = align.align(args.imgDim, rgbImg, bb,
+                              landmarkIndices=openface.AlignDlib.OUTER_EYES_AND_NOSE)
+    if alignedFace is None:
+        raise Exception("Unable to align image")
+    if args.verbose:
+        print("  + Face alignment took {} seconds.".format(time.time() - start))
+
+    start = time.time()
+    rep = net.forward(alignedFace)
+    if args.verbose:
+        print("  + OpenFace forward pass took {} seconds.".format(time.time() - start))
+        print("Representation:")
+        print(rep)
+        print("-----\n")
+    return rep
 
 if __name__ == '__main__':
     log.startLogging(sys.stdout)
