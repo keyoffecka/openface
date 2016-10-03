@@ -68,6 +68,8 @@ parser.add_argument('--unknown', type=bool, default=False,
                     help='Try to predict unknown people')
 parser.add_argument('--port', type=int, default=9000,
                     help='WebSocket Port')
+parser.add_argument('--verbose', type=bool, default=False,
+                    help='Verbose mode')
 
 args = parser.parse_args()
 
