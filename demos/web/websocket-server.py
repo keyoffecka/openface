@@ -369,13 +369,13 @@ def getRep(dataURL):
     imgF = StringIO.StringIO()
     imgF.write(imgdata)
     imgF.seek(0)
-    rgbImg = Image.open(imgF)
+    img = Image.open(imgF)
 
-    # buf = np.fliplr(np.asarray(img))
-    # rgbImg = np.zeros((300, 400, 3), dtype=np.uint8)
-    # rgbImg[:, :, 0] = buf[:, :, 2]
-    # rgbImg[:, :, 1] = buf[:, :, 1]
-    # rgbImg[:, :, 2] = buf[:, :, 0]
+    buf = np.fliplr(np.asarray(img))
+    rgbImg = np.zeros((img.size.width, img.size.height, 3), dtype=np.uint8)
+    rgbImg[:, :, 0] = buf[:, :, 2]
+    rgbImg[:, :, 1] = buf[:, :, 1]
+    rgbImg[:, :, 2] = buf[:, :, 0]
 
     if args.verbose:
         print("  + Original size: {}".format(rgbImg.shape))
