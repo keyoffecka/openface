@@ -113,7 +113,7 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             msg['type'], len(raw)))
         if msg['type'] == "ALL_STATE":
             self.loadState(msg['images'], msg['training'], msg['people'])
-        elif msg['type'] == "":
+        elif msg['type'] == "COMPARE":
             d = getRep(msg['img1']) - getRep(msg['img2'])
             self.sendMessage('{"distance": {:0.3f}}'.format(np.dot(d, d)))
         elif msg['type'] == "NULL":
