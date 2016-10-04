@@ -19,6 +19,7 @@ import sys
 fileDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(fileDir, "..", ".."))
 
+import urllib2
 import txaio
 txaio.use_twisted()
 
@@ -116,7 +117,10 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
         if msg['type'] == "ALL_STATE":
             self.loadState(msg['images'], msg['training'], msg['people'])
         elif msg['type'] == "COMPARE":
-            d = getRep(msg['img1']) - getRep(msg['img2'])
+            d = getRepFromText(msg['img1']) - getRepFromText(msg['img2'])
+            self.sendMessage('{"distance": %.3g'%np.dot(d, d) + '}')
+        elif msg['type'] == "COMPARE_URLS":
+            d = getRepFromURL(msg['img1']) - getRepFromURL(msg['img2'])
             self.sendMessage('{"distance": %.3g'%np.dot(d, d) + '}')
         elif msg['type'] == "NULL":
             self.sendMessage('{"type": "NULL"}')
@@ -360,12 +364,13 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             plt.close()
             self.sendMessage(json.dumps(msg))
 
-def getRep(dataURL):
+def getRepFromText(dataURL):
     if args.verbose:
         print("Processing.")
     head = "data:image/jpeg;base64,"
     assert(dataURL.startswith(head))
     imgdata = base64.b64decode(dataURL[len(head):])
+    return getRep(imgdata)
     # imgF = StringIO.StringIO()
     # imgF.write(imgdata)
     # imgF.seek(0)
@@ -377,6 +382,11 @@ def getRep(dataURL):
     # rgbImg[:, :, 1] = buf[:, :, 1]
     # rgbImg[:, :, 2] = buf[:, :, 0]
 
+def getRepFromURL(url):
+    response = urllib2.urlopen(url)
+    html = response.read()
+
+def getRep(imgdata):
     nparr = np.fromstring(imgdata, np.uint8)
     bgrImg = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
     rgbImg = cv2.cvtColor(bgrImg, cv2.COLOR_BGR2RGB)
