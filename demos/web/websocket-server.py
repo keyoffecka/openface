@@ -372,7 +372,7 @@ def getRep(dataURL):
     img = Image.open(imgF)
 
     buf = np.fliplr(np.asarray(img))
-    rgbImg = np.zeros((img.size[0], img.size[0], 3), dtype=np.uint8)
+    rgbImg = np.zeros((img.size[0], img.size[1], 3), dtype=np.uint8)
     rgbImg[:, :, 0] = buf[:, :, 2]
     rgbImg[:, :, 1] = buf[:, :, 1]
     rgbImg[:, :, 2] = buf[:, :, 0]
