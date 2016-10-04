@@ -384,7 +384,8 @@ def getRepFromText(dataURL):
 
 def getRepFromURL(url):
     response = urllib2.urlopen(url)
-    html = response.read()
+    imgdata = response.read()
+    return getRep(imgdata)
 
 def getRep(imgdata):
     nparr = np.fromstring(imgdata, np.uint8)
