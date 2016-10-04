@@ -117,7 +117,7 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             self.loadState(msg['images'], msg['training'], msg['people'])
         elif msg['type'] == "COMPARE":
             d = getRep(msg['img1']) - getRep(msg['img2'])
-            self.sendMessage('{"distance": {:0.3f}}'.format(np.dot(d, d)))
+            self.sendMessage('{"distance": ' + np.dot(d, d) + '}')
         elif msg['type'] == "NULL":
             self.sendMessage('{"type": "NULL"}')
         elif msg['type'] == "FRAME":
