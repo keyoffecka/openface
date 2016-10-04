@@ -366,16 +366,19 @@ def getRep(dataURL):
     head = "data:image/jpeg;base64,"
     assert(dataURL.startswith(head))
     imgdata = base64.b64decode(dataURL[len(head):])
-    imgF = StringIO.StringIO()
-    imgF.write(imgdata)
-    imgF.seek(0)
-    img = Image.open(imgF)
+    # imgF = StringIO.StringIO()
+    # imgF.write(imgdata)
+    # imgF.seek(0)
+    # img = Image.open(imgF)
+    #
+    # buf = np.fliplr(np.asarray(img))
+    # rgbImg = np.zeros((img.size[1], img.size[0], 3), dtype=np.uint8)
+    # rgbImg[:, :, 0] = buf[:, :, 2]
+    # rgbImg[:, :, 1] = buf[:, :, 1]
+    # rgbImg[:, :, 2] = buf[:, :, 0]
 
-    buf = np.fliplr(np.asarray(img))
-    rgbImg = np.zeros((img.size[1], img.size[0], 3), dtype=np.uint8)
-    rgbImg[:, :, 0] = buf[:, :, 2]
-    rgbImg[:, :, 1] = buf[:, :, 1]
-    rgbImg[:, :, 2] = buf[:, :, 0]
+    bgrImg = cv2.imdecode(imgdata)
+    rgbImg = cv2.cvtColor(bgrImg, cv2.COLOR_BGR2RGB)
 
     if args.verbose:
         print("  + Original size: {}".format(rgbImg.shape))
