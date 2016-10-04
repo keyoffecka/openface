@@ -377,7 +377,8 @@ def getRep(dataURL):
     # rgbImg[:, :, 1] = buf[:, :, 1]
     # rgbImg[:, :, 2] = buf[:, :, 0]
 
-    bgrImg = cv2.imdecode(imgdata, cv2.CV_LOAD_IMAGE_COLOR)
+    nparr = np.fromstring(imgdata, np.uint8)
+    bgrImg = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
     rgbImg = cv2.cvtColor(bgrImg, cv2.COLOR_BGR2RGB)
 
     if args.verbose:
