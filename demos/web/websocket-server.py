@@ -110,50 +110,51 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
         print("WebSocket connection open.")
 
     def onMessage(self, payload, isBinary):
-        raw = payload.decode('utf8')
-        msg = json.loads(raw)
-        print("Received {} message of length {}.".format(
-            msg['type'], len(raw)))
-        if msg['type'] == "ALL_STATE":
-            self.loadState(msg['images'], msg['training'], msg['people'])
-        elif msg['type'] == "COMPARE":
-            d = getRepFromText(msg['img1']) - getRepFromText(msg['img2'])
-            self.sendMessage('{"distance": %.3g'%np.dot(d, d) + '}')
-        elif msg['type'] == "COMPARE_URLS":
-            d = getRepFromURL(msg['img1']) - getRepFromURL(msg['img2'])
-            self.sendMessage('{"distance": %.3g'%np.dot(d, d) + '}')
-        elif msg['type'] == "NULL":
-            self.sendMessage('{"type": "NULL"}')
-        elif msg['type'] == "FRAME":
-            self.processFrame(msg['dataURL'], msg['identity'])
-            self.sendMessage('{"type": "PROCESSED"}')
-        elif msg['type'] == "TRAINING":
-            self.training = msg['val']
-            if not self.training:
-                self.trainSVM()
-        elif msg['type'] == "ADD_PERSON":
-            self.people.append(msg['val'].encode('ascii', 'ignore'))
-            print(self.people)
-        elif msg['type'] == "UPDATE_IDENTITY":
-            h = msg['hash'].encode('ascii', 'ignore')
-            if h in self.images:
-                self.images[h].identity = msg['idx']
+        try:
+            raw = payload.decode('utf8')
+            msg = json.loads(raw)
+            print("Received {} message of length {}.".format(
+                msg['type'], len(raw)))
+            if msg['type'] == "ALL_STATE":
+                self.loadState(msg['images'], msg['training'], msg['people'])
+            elif msg['type'] == "COMPARE":
+                d = getRep(msg['img1']) - getRep(msg['img2'])
+                self.sendMessage('{"distance": %.3g'%np.dot(d, d) + '}')
+            elif msg['type'] == "NULL":
+                self.sendMessage('{"type": "NULL"}')
+            elif msg['type'] == "FRAME":
+                self.processFrame(msg['dataURL'], msg['identity'])
+                self.sendMessage('{"type": "PROCESSED"}')
+            elif msg['type'] == "TRAINING":
+                self.training = msg['val']
                 if not self.training:
                     self.trainSVM()
+            elif msg['type'] == "ADD_PERSON":
+                self.people.append(msg['val'].encode('ascii', 'ignore'))
+                print(self.people)
+            elif msg['type'] == "UPDATE_IDENTITY":
+                h = msg['hash'].encode('ascii', 'ignore')
+                if h in self.images:
+                    self.images[h].identity = msg['idx']
+                    if not self.training:
+                        self.trainSVM()
+                else:
+                    print("Image not found.")
+            elif msg['type'] == "REMOVE_IMAGE":
+                h = msg['hash'].encode('ascii', 'ignore')
+                if h in self.images:
+                    del self.images[h]
+                    if not self.training:
+                        self.trainSVM()
+                else:
+                    print("Image not found.")
+            elif msg['type'] == 'REQ_TSNE':
+                self.sendTSNE(msg['people'])
             else:
-                print("Image not found.")
-        elif msg['type'] == "REMOVE_IMAGE":
-            h = msg['hash'].encode('ascii', 'ignore')
-            if h in self.images:
-                del self.images[h]
-                if not self.training:
-                    self.trainSVM()
-            else:
-                print("Image not found.")
-        elif msg['type'] == 'REQ_TSNE':
-            self.sendTSNE(msg['people'])
-        else:
-            print("Warning: Unknown message type: {}".format(msg['type']))
+                print("Warning: Unknown message type: {}".format(msg['type']))
+        except Exception as ex:
+            self.sendMessage('{"error": "' + ex.message + '"}')
+            raise ex
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
@@ -364,30 +365,16 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
             plt.close()
             self.sendMessage(json.dumps(msg))
 
-def getRepFromText(dataURL):
+def getRep(url):
     if args.verbose:
         print("Processing.")
     head = "data:image/jpeg;base64,"
-    assert(dataURL.startswith(head))
-    imgdata = base64.b64decode(dataURL[len(head):])
-    return getRep(imgdata)
-    # imgF = StringIO.StringIO()
-    # imgF.write(imgdata)
-    # imgF.seek(0)
-    # img = Image.open(imgF)
-    #
-    # buf = np.fliplr(np.asarray(img))
-    # rgbImg = np.zeros((img.size[1], img.size[0], 3), dtype=np.uint8)
-    # rgbImg[:, :, 0] = buf[:, :, 2]
-    # rgbImg[:, :, 1] = buf[:, :, 1]
-    # rgbImg[:, :, 2] = buf[:, :, 0]
+    if url.startswith(head):
+        imgdata = base64.b64decode(url[len(head):])
+    else:
+        response = urllib2.urlopen(url)
+        imgdata = response.read()
 
-def getRepFromURL(url):
-    response = urllib2.urlopen(url)
-    imgdata = response.read()
-    return getRep(imgdata)
-
-def getRep(imgdata):
     nparr = np.fromstring(imgdata, np.uint8)
     bgrImg = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
     rgbImg = cv2.cvtColor(bgrImg, cv2.COLOR_BGR2RGB)
