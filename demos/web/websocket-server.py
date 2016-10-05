@@ -16,6 +16,8 @@
 
 import os
 import sys
+import traceback
+
 fileDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(fileDir, "..", ".."))
 
@@ -154,7 +156,7 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
                 print("Warning: Unknown message type: {}".format(msg['type']))
         except Exception as ex:
             self.sendMessage('{"error": "' + ex.message + '"}')
-            raise ex
+            traceback.print_exc(file=sys.stdout)
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
