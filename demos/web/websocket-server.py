@@ -154,8 +154,8 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
                 self.sendTSNE(msg['people'])
             else:
                 print("Warning: Unknown message type: {}".format(msg['type']))
-        except Exception as ex:
-            self.sendMessage('{"error": "' + ex.message + '"}')
+        except Exception, e:
+            self.sendMessage('{"error": "' + str(e) + '"}')
             traceback.print_exc(file=sys.stdout)
 
     def onClose(self, wasClean, code, reason):
