@@ -370,12 +370,13 @@ class OpenFaceServerProtocol(WebSocketServerProtocol):
 def getRep(url):
     if args.verbose:
         print("Processing.")
-    head = "data:image/jpeg;base64,"
-    if url.startswith(head):
-        imgdata = base64.b64decode(url[len(head):])
-    else:
+    if url.startswith("http://") or url.startswith("https://"):
         response = urllib2.urlopen(url)
         imgdata = response.read()
+    else:
+        marker = ";base64,"
+        index = url.find(marker)
+        imgdata = base64.b64decode(url[(index + len(marker)):])
 
     nparr = np.fromstring(imgdata, np.uint8)
     bgrImg = cv2.imdecode(nparr, cv2.CV_LOAD_IMAGE_COLOR)
