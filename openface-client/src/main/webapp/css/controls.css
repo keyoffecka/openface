@@ -1,0 +1,11 @@
+.riskpass-ofc-button {
+  width: 5em;
+  height: 2em;
+  cursor: pointer;
+}
+
+.riskpass-ofc-button:active {
+  position: relative;
+  left: 2px;
+  top: 2px;
+}

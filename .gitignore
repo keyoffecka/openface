@@ -28,3 +28,10 @@ models/openface/*.pkl
 celeb-classifier*
 
 site
+
+target
+build.xml
+build.properties
+local.properties
+externals
+jsc
